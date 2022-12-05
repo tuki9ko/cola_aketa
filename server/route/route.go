@@ -1,12 +1,19 @@
 package route
 
 import (
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	v1controller "github.com/tuki9ko/cola_aketa/api/v1/controller"
 	"github.com/tuki9ko/cola_aketa/middleware"
 )
 
-func DefineRoutes(r gin.IRouter) {
+func GetRouter() *gin.Engine {
+	r := gin.Default()
+
+	store := cookie.NewStore([]byte("secret"))
+	r.Use(sessions.Sessions("cola_session", store))
+
 	api := r.Group("/api")
 	{
 		v1 := api.Group("/v1")
@@ -22,5 +29,5 @@ func DefineRoutes(r gin.IRouter) {
 			}
 		}
 	}
-
+	return r
 }
