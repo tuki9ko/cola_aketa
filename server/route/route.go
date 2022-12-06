@@ -8,6 +8,11 @@ import (
 	"github.com/tuki9ko/cola_aketa/middleware"
 )
 
+var (
+	cc v1controller.ColaController
+	lc v1controller.LoginController
+)
+
 func GetRouter() *gin.Engine {
 	r := gin.Default()
 
@@ -18,14 +23,14 @@ func GetRouter() *gin.Engine {
 	{
 		v1 := api.Group("/v1")
 		{
-			v1.GET("/login", v1controller.GetLogin)
-			v1.POST("/login", v1controller.PostLogin)
-			v1.POST("/logout", v1controller.GetLogout)
+			v1.GET("/login", lc.GetLogin)
+			v1.POST("/login", lc.PostLogin)
+			v1.POST("/logout", lc.GetLogout)
 
 			root := v1.Group("/")
 			root.Use(middleware.HasValidLoginSession())
 			{
-				root.GET("/cola", v1controller.GetCola)
+				root.GET("/cola", cc.GetCola)
 			}
 		}
 	}

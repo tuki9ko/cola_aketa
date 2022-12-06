@@ -5,24 +5,28 @@ import (
 	"github.com/tuki9ko/cola_aketa/api/v1/service"
 )
 
-func GetLogin(c *gin.Context) {
+type LoginController struct{}
+
+var ls service.LoginService
+
+func (lc LoginController) GetLogin(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "GET login",
 	})
 }
 
-func PostLogin(c *gin.Context) {
+func (lc LoginController) PostLogin(c *gin.Context) {
 	userId := c.PostForm("userId")
 
-	service.Login(c, userId)
+	ls.Login(c, userId)
 
 	c.JSON(200, gin.H{
 		"message": "login successful",
 	})
 }
 
-func GetLogout(c *gin.Context) {
-	service.Logout(c)
+func (lc LoginController) GetLogout(c *gin.Context) {
+	ls.Logout(c)
 
 	c.JSON(200, gin.H{
 		"message": "logout successful",

@@ -5,13 +5,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Login(c *gin.Context, userId string) {
+type LoginService struct{}
+
+func (s LoginService) Login(c *gin.Context, userId string) {
 	session := sessions.Default(c)
 	session.Set("userId", userId)
 	session.Save()
 }
 
-func Logout(c *gin.Context) {
+func (s LoginService) Logout(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
 	session.Save()
