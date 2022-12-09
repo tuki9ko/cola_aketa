@@ -1,0 +1,9 @@
+[psql]
+  dbname = "cola_db"
+  host   = "postgres"
+  port   = "5432"
+  user   = "root"
+  pass   = "password"
+  sslmode = "disable"
+  schema = "public"
+  blacklist = ["schema_migrations"]

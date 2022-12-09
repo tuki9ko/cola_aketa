@@ -6,7 +6,6 @@ services:
             context: ./docker
             args:
                 - GO_VERSION=${GO_VERSION}
-                - API_CODE_WORKDIR=${API_CODE_WORKDIR}
         environment:
             - POSTGRESQL_URL=${POSTGRESQL_URL}
         volumes:
