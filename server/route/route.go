@@ -11,6 +11,7 @@ import (
 var (
 	cc v1controller.ColaController
 	lc v1controller.LoginController
+	sc v1controller.SignupController
 )
 
 func GetRouter() *gin.Engine {
@@ -26,6 +27,8 @@ func GetRouter() *gin.Engine {
 			v1.GET("/login", lc.GetLogin)
 			v1.POST("/login", lc.PostLogin)
 			v1.POST("/logout", lc.GetLogout)
+			v1.GET("/signup", sc.GetSignup)
+			v1.POST("/signup", sc.PostSignup)
 
 			root := v1.Group("/")
 			root.Use(middleware.HasValidLoginSession())
