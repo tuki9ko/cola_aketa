@@ -12,61 +12,113 @@ import "testing"
 // It does NOT run each operation group in parallel.
 // Separating the tests thusly grants avoidance of Postgres deadlocks.
 func TestParent(t *testing.T) {
+	t.Run("ColaResults", testColaResults)
+	t.Run("ColaTypes", testColaTypes)
+	t.Run("Manufacturers", testManufacturers)
+	t.Run("Packages", testPackages)
 	t.Run("UserRoles", testUserRoles)
 	t.Run("Users", testUsers)
 }
 
 func TestDelete(t *testing.T) {
+	t.Run("ColaResults", testColaResultsDelete)
+	t.Run("ColaTypes", testColaTypesDelete)
+	t.Run("Manufacturers", testManufacturersDelete)
+	t.Run("Packages", testPackagesDelete)
 	t.Run("UserRoles", testUserRolesDelete)
 	t.Run("Users", testUsersDelete)
 }
 
 func TestQueryDeleteAll(t *testing.T) {
+	t.Run("ColaResults", testColaResultsQueryDeleteAll)
+	t.Run("ColaTypes", testColaTypesQueryDeleteAll)
+	t.Run("Manufacturers", testManufacturersQueryDeleteAll)
+	t.Run("Packages", testPackagesQueryDeleteAll)
 	t.Run("UserRoles", testUserRolesQueryDeleteAll)
 	t.Run("Users", testUsersQueryDeleteAll)
 }
 
 func TestSliceDeleteAll(t *testing.T) {
+	t.Run("ColaResults", testColaResultsSliceDeleteAll)
+	t.Run("ColaTypes", testColaTypesSliceDeleteAll)
+	t.Run("Manufacturers", testManufacturersSliceDeleteAll)
+	t.Run("Packages", testPackagesSliceDeleteAll)
 	t.Run("UserRoles", testUserRolesSliceDeleteAll)
 	t.Run("Users", testUsersSliceDeleteAll)
 }
 
 func TestExists(t *testing.T) {
+	t.Run("ColaResults", testColaResultsExists)
+	t.Run("ColaTypes", testColaTypesExists)
+	t.Run("Manufacturers", testManufacturersExists)
+	t.Run("Packages", testPackagesExists)
 	t.Run("UserRoles", testUserRolesExists)
 	t.Run("Users", testUsersExists)
 }
 
 func TestFind(t *testing.T) {
+	t.Run("ColaResults", testColaResultsFind)
+	t.Run("ColaTypes", testColaTypesFind)
+	t.Run("Manufacturers", testManufacturersFind)
+	t.Run("Packages", testPackagesFind)
 	t.Run("UserRoles", testUserRolesFind)
 	t.Run("Users", testUsersFind)
 }
 
 func TestBind(t *testing.T) {
+	t.Run("ColaResults", testColaResultsBind)
+	t.Run("ColaTypes", testColaTypesBind)
+	t.Run("Manufacturers", testManufacturersBind)
+	t.Run("Packages", testPackagesBind)
 	t.Run("UserRoles", testUserRolesBind)
 	t.Run("Users", testUsersBind)
 }
 
 func TestOne(t *testing.T) {
+	t.Run("ColaResults", testColaResultsOne)
+	t.Run("ColaTypes", testColaTypesOne)
+	t.Run("Manufacturers", testManufacturersOne)
+	t.Run("Packages", testPackagesOne)
 	t.Run("UserRoles", testUserRolesOne)
 	t.Run("Users", testUsersOne)
 }
 
 func TestAll(t *testing.T) {
+	t.Run("ColaResults", testColaResultsAll)
+	t.Run("ColaTypes", testColaTypesAll)
+	t.Run("Manufacturers", testManufacturersAll)
+	t.Run("Packages", testPackagesAll)
 	t.Run("UserRoles", testUserRolesAll)
 	t.Run("Users", testUsersAll)
 }
 
 func TestCount(t *testing.T) {
+	t.Run("ColaResults", testColaResultsCount)
+	t.Run("ColaTypes", testColaTypesCount)
+	t.Run("Manufacturers", testManufacturersCount)
+	t.Run("Packages", testPackagesCount)
 	t.Run("UserRoles", testUserRolesCount)
 	t.Run("Users", testUsersCount)
 }
 
 func TestHooks(t *testing.T) {
+	t.Run("ColaResults", testColaResultsHooks)
+	t.Run("ColaTypes", testColaTypesHooks)
+	t.Run("Manufacturers", testManufacturersHooks)
+	t.Run("Packages", testPackagesHooks)
 	t.Run("UserRoles", testUserRolesHooks)
 	t.Run("Users", testUsersHooks)
 }
 
 func TestInsert(t *testing.T) {
+	t.Run("ColaResults", testColaResultsInsert)
+	t.Run("ColaResults", testColaResultsInsertWhitelist)
+	t.Run("ColaTypes", testColaTypesInsert)
+	t.Run("ColaTypes", testColaTypesInsertWhitelist)
+	t.Run("Manufacturers", testManufacturersInsert)
+	t.Run("Manufacturers", testManufacturersInsertWhitelist)
+	t.Run("Packages", testPackagesInsert)
+	t.Run("Packages", testPackagesInsertWhitelist)
 	t.Run("UserRoles", testUserRolesInsert)
 	t.Run("UserRoles", testUserRolesInsertWhitelist)
 	t.Run("Users", testUsersInsert)
@@ -114,26 +166,46 @@ func TestToManySet(t *testing.T) {}
 func TestToManyRemove(t *testing.T) {}
 
 func TestReload(t *testing.T) {
+	t.Run("ColaResults", testColaResultsReload)
+	t.Run("ColaTypes", testColaTypesReload)
+	t.Run("Manufacturers", testManufacturersReload)
+	t.Run("Packages", testPackagesReload)
 	t.Run("UserRoles", testUserRolesReload)
 	t.Run("Users", testUsersReload)
 }
 
 func TestReloadAll(t *testing.T) {
+	t.Run("ColaResults", testColaResultsReloadAll)
+	t.Run("ColaTypes", testColaTypesReloadAll)
+	t.Run("Manufacturers", testManufacturersReloadAll)
+	t.Run("Packages", testPackagesReloadAll)
 	t.Run("UserRoles", testUserRolesReloadAll)
 	t.Run("Users", testUsersReloadAll)
 }
 
 func TestSelect(t *testing.T) {
+	t.Run("ColaResults", testColaResultsSelect)
+	t.Run("ColaTypes", testColaTypesSelect)
+	t.Run("Manufacturers", testManufacturersSelect)
+	t.Run("Packages", testPackagesSelect)
 	t.Run("UserRoles", testUserRolesSelect)
 	t.Run("Users", testUsersSelect)
 }
 
 func TestUpdate(t *testing.T) {
+	t.Run("ColaResults", testColaResultsUpdate)
+	t.Run("ColaTypes", testColaTypesUpdate)
+	t.Run("Manufacturers", testManufacturersUpdate)
+	t.Run("Packages", testPackagesUpdate)
 	t.Run("UserRoles", testUserRolesUpdate)
 	t.Run("Users", testUsersUpdate)
 }
 
 func TestSliceUpdateAll(t *testing.T) {
+	t.Run("ColaResults", testColaResultsSliceUpdateAll)
+	t.Run("ColaTypes", testColaTypesSliceUpdateAll)
+	t.Run("Manufacturers", testManufacturersSliceUpdateAll)
+	t.Run("Packages", testPackagesSliceUpdateAll)
 	t.Run("UserRoles", testUserRolesSliceUpdateAll)
 	t.Run("Users", testUsersSliceUpdateAll)
 }

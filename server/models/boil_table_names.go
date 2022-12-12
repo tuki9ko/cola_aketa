@@ -4,9 +4,17 @@
 package models
 
 var TableNames = struct {
-	UserRoles string
-	Users     string
+	ColaResults   string
+	ColaTypes     string
+	Manufacturers string
+	Packages      string
+	UserRoles     string
+	Users         string
 }{
-	UserRoles: "user_roles",
-	Users:     "users",
+	ColaResults:   "cola_results",
+	ColaTypes:     "cola_types",
+	Manufacturers: "manufacturers",
+	Packages:      "packages",
+	UserRoles:     "user_roles",
+	Users:         "users",
 }
