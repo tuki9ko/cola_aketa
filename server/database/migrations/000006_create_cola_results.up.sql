@@ -1,0 +1,8 @@
+CREATE TABLE cola_results (
+	id SERIAL NOT NULL,
+	user_id INTEGER NOT NULL,
+	cola_id INTEGER NOT NULL,
+	result_date TIMESTAMP NOT NULL,
+	note VARCHAR(255) NOT NULL,
+	PRIMARY KEY (id)
+);
