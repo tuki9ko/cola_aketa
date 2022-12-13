@@ -22,11 +22,13 @@ func (s LoginService) Login(c *gin.Context, userId string, password string) (*mo
 		return nil, err
 	}
 
-	if user == nil {
-		return nil, errors.New("Incorrect username or password")
+	hashedPassword := "$2a$10$xxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+	if user != nil {
+		hashedPassword = user.HashedPassword
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.HashedPassword), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 
 	if err != nil {
 		return nil, errors.New("Incorrect username or password")
