@@ -35,7 +35,7 @@ func (s LoginService) Login(c *gin.Context, userId string, password string) (*mo
 	}
 
 	session := sessions.Default(c)
-	session.Set("userId", userId)
+	session.Set("userId", user.ID)
 	session.Save()
 
 	return user, nil
