@@ -34,6 +34,7 @@ func GetRouter() *gin.Engine {
 			root.Use(middleware.HasValidLoginSession())
 			{
 				root.GET("/cola", cc.GetCola)
+				root.POST("/cola", cc.PostCola)
 			}
 		}
 	}
