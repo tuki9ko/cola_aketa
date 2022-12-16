@@ -86,15 +86,46 @@ var ColaTypeWhere = struct {
 
 // ColaTypeRels is where relationship names are stored.
 var ColaTypeRels = struct {
-}{}
+	Manufacturer    string
+	Package         string
+	ColaColaResults string
+}{
+	Manufacturer:    "Manufacturer",
+	Package:         "Package",
+	ColaColaResults: "ColaColaResults",
+}
 
 // colaTypeR is where relationships are stored.
 type colaTypeR struct {
+	Manufacturer    *Manufacturer   `boil:"Manufacturer" json:"Manufacturer" toml:"Manufacturer" yaml:"Manufacturer"`
+	Package         *Package        `boil:"Package" json:"Package" toml:"Package" yaml:"Package"`
+	ColaColaResults ColaResultSlice `boil:"ColaColaResults" json:"ColaColaResults" toml:"ColaColaResults" yaml:"ColaColaResults"`
 }
 
 // NewStruct creates a new relationship struct
 func (*colaTypeR) NewStruct() *colaTypeR {
 	return &colaTypeR{}
+}
+
+func (r *colaTypeR) GetManufacturer() *Manufacturer {
+	if r == nil {
+		return nil
+	}
+	return r.Manufacturer
+}
+
+func (r *colaTypeR) GetPackage() *Package {
+	if r == nil {
+		return nil
+	}
+	return r.Package
+}
+
+func (r *colaTypeR) GetColaColaResults() ColaResultSlice {
+	if r == nil {
+		return nil
+	}
+	return r.ColaColaResults
 }
 
 // colaTypeL is where Load methods for each relationship are stored.
@@ -384,6 +415,543 @@ func (q colaTypeQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (b
 	}
 
 	return count > 0, nil
+}
+
+// Manufacturer pointed to by the foreign key.
+func (o *ColaType) Manufacturer(mods ...qm.QueryMod) manufacturerQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.ManufacturerID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Manufacturers(queryMods...)
+}
+
+// Package pointed to by the foreign key.
+func (o *ColaType) Package(mods ...qm.QueryMod) packageQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.PackageID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Packages(queryMods...)
+}
+
+// ColaColaResults retrieves all the cola_result's ColaResults with an executor via cola_id column.
+func (o *ColaType) ColaColaResults(mods ...qm.QueryMod) colaResultQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"cola_results\".\"cola_id\"=?", o.ID),
+	)
+
+	return ColaResults(queryMods...)
+}
+
+// LoadManufacturer allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (colaTypeL) LoadManufacturer(ctx context.Context, e boil.ContextExecutor, singular bool, maybeColaType interface{}, mods queries.Applicator) error {
+	var slice []*ColaType
+	var object *ColaType
+
+	if singular {
+		var ok bool
+		object, ok = maybeColaType.(*ColaType)
+		if !ok {
+			object = new(ColaType)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeColaType)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeColaType))
+			}
+		}
+	} else {
+		s, ok := maybeColaType.(*[]*ColaType)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeColaType)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeColaType))
+			}
+		}
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &colaTypeR{}
+		}
+		args = append(args, object.ManufacturerID)
+
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &colaTypeR{}
+			}
+
+			for _, a := range args {
+				if a == obj.ManufacturerID {
+					continue Outer
+				}
+			}
+
+			args = append(args, obj.ManufacturerID)
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`manufacturers`),
+		qm.WhereIn(`manufacturers.id in ?`, args...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Manufacturer")
+	}
+
+	var resultSlice []*Manufacturer
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Manufacturer")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for manufacturers")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for manufacturers")
+	}
+
+	if len(colaTypeAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.Manufacturer = foreign
+		if foreign.R == nil {
+			foreign.R = &manufacturerR{}
+		}
+		foreign.R.ColaTypes = append(foreign.R.ColaTypes, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.ManufacturerID == foreign.ID {
+				local.R.Manufacturer = foreign
+				if foreign.R == nil {
+					foreign.R = &manufacturerR{}
+				}
+				foreign.R.ColaTypes = append(foreign.R.ColaTypes, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadPackage allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (colaTypeL) LoadPackage(ctx context.Context, e boil.ContextExecutor, singular bool, maybeColaType interface{}, mods queries.Applicator) error {
+	var slice []*ColaType
+	var object *ColaType
+
+	if singular {
+		var ok bool
+		object, ok = maybeColaType.(*ColaType)
+		if !ok {
+			object = new(ColaType)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeColaType)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeColaType))
+			}
+		}
+	} else {
+		s, ok := maybeColaType.(*[]*ColaType)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeColaType)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeColaType))
+			}
+		}
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &colaTypeR{}
+		}
+		args = append(args, object.PackageID)
+
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &colaTypeR{}
+			}
+
+			for _, a := range args {
+				if a == obj.PackageID {
+					continue Outer
+				}
+			}
+
+			args = append(args, obj.PackageID)
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`packages`),
+		qm.WhereIn(`packages.id in ?`, args...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Package")
+	}
+
+	var resultSlice []*Package
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Package")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for packages")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for packages")
+	}
+
+	if len(colaTypeAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.Package = foreign
+		if foreign.R == nil {
+			foreign.R = &packageR{}
+		}
+		foreign.R.ColaTypes = append(foreign.R.ColaTypes, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.PackageID == foreign.ID {
+				local.R.Package = foreign
+				if foreign.R == nil {
+					foreign.R = &packageR{}
+				}
+				foreign.R.ColaTypes = append(foreign.R.ColaTypes, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadColaColaResults allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (colaTypeL) LoadColaColaResults(ctx context.Context, e boil.ContextExecutor, singular bool, maybeColaType interface{}, mods queries.Applicator) error {
+	var slice []*ColaType
+	var object *ColaType
+
+	if singular {
+		var ok bool
+		object, ok = maybeColaType.(*ColaType)
+		if !ok {
+			object = new(ColaType)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeColaType)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeColaType))
+			}
+		}
+	} else {
+		s, ok := maybeColaType.(*[]*ColaType)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeColaType)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeColaType))
+			}
+		}
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &colaTypeR{}
+		}
+		args = append(args, object.ID)
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &colaTypeR{}
+			}
+
+			for _, a := range args {
+				if a == obj.ID {
+					continue Outer
+				}
+			}
+
+			args = append(args, obj.ID)
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`cola_results`),
+		qm.WhereIn(`cola_results.cola_id in ?`, args...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load cola_results")
+	}
+
+	var resultSlice []*ColaResult
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice cola_results")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on cola_results")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for cola_results")
+	}
+
+	if len(colaResultAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ColaColaResults = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &colaResultR{}
+			}
+			foreign.R.Cola = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.ColaID {
+				local.R.ColaColaResults = append(local.R.ColaColaResults, foreign)
+				if foreign.R == nil {
+					foreign.R = &colaResultR{}
+				}
+				foreign.R.Cola = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// SetManufacturer of the colaType to the related item.
+// Sets o.R.Manufacturer to related.
+// Adds o to related.R.ColaTypes.
+func (o *ColaType) SetManufacturer(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Manufacturer) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"cola_types\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"manufacturer_id"}),
+		strmangle.WhereClause("\"", "\"", 2, colaTypePrimaryKeyColumns),
+	)
+	values := []interface{}{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.ManufacturerID = related.ID
+	if o.R == nil {
+		o.R = &colaTypeR{
+			Manufacturer: related,
+		}
+	} else {
+		o.R.Manufacturer = related
+	}
+
+	if related.R == nil {
+		related.R = &manufacturerR{
+			ColaTypes: ColaTypeSlice{o},
+		}
+	} else {
+		related.R.ColaTypes = append(related.R.ColaTypes, o)
+	}
+
+	return nil
+}
+
+// SetPackage of the colaType to the related item.
+// Sets o.R.Package to related.
+// Adds o to related.R.ColaTypes.
+func (o *ColaType) SetPackage(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Package) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"cola_types\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"package_id"}),
+		strmangle.WhereClause("\"", "\"", 2, colaTypePrimaryKeyColumns),
+	)
+	values := []interface{}{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.PackageID = related.ID
+	if o.R == nil {
+		o.R = &colaTypeR{
+			Package: related,
+		}
+	} else {
+		o.R.Package = related
+	}
+
+	if related.R == nil {
+		related.R = &packageR{
+			ColaTypes: ColaTypeSlice{o},
+		}
+	} else {
+		related.R.ColaTypes = append(related.R.ColaTypes, o)
+	}
+
+	return nil
+}
+
+// AddColaColaResults adds the given related objects to the existing relationships
+// of the cola_type, optionally inserting them as new records.
+// Appends related to o.R.ColaColaResults.
+// Sets related.R.Cola appropriately.
+func (o *ColaType) AddColaColaResults(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*ColaResult) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.ColaID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"cola_results\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"cola_id"}),
+				strmangle.WhereClause("\"", "\"", 2, colaResultPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.ColaID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &colaTypeR{
+			ColaColaResults: related,
+		}
+	} else {
+		o.R.ColaColaResults = append(o.R.ColaColaResults, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &colaResultR{
+				Cola: o,
+			}
+		} else {
+			rel.R.Cola = o
+		}
+	}
+	return nil
 }
 
 // ColaTypes retrieves all the records using an executor.

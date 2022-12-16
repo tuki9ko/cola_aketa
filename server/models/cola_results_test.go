@@ -494,6 +494,223 @@ func testColaResultsInsertWhitelist(t *testing.T) {
 	}
 }
 
+func testColaResultToOneColaTypeUsingCola(t *testing.T) {
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var local ColaResult
+	var foreign ColaType
+
+	seed := randomize.NewSeed()
+	if err := randomize.Struct(seed, &local, colaResultDBTypes, false, colaResultColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize ColaResult struct: %s", err)
+	}
+	if err := randomize.Struct(seed, &foreign, colaTypeDBTypes, false, colaTypeColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize ColaType struct: %s", err)
+	}
+
+	if err := foreign.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	local.ColaID = foreign.ID
+	if err := local.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	check, err := local.Cola().One(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if check.ID != foreign.ID {
+		t.Errorf("want: %v, got %v", foreign.ID, check.ID)
+	}
+
+	slice := ColaResultSlice{&local}
+	if err = local.L.LoadCola(ctx, tx, false, (*[]*ColaResult)(&slice), nil); err != nil {
+		t.Fatal(err)
+	}
+	if local.R.Cola == nil {
+		t.Error("struct should have been eager loaded")
+	}
+
+	local.R.Cola = nil
+	if err = local.L.LoadCola(ctx, tx, true, &local, nil); err != nil {
+		t.Fatal(err)
+	}
+	if local.R.Cola == nil {
+		t.Error("struct should have been eager loaded")
+	}
+}
+
+func testColaResultToOneUserUsingUser(t *testing.T) {
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var local ColaResult
+	var foreign User
+
+	seed := randomize.NewSeed()
+	if err := randomize.Struct(seed, &local, colaResultDBTypes, false, colaResultColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize ColaResult struct: %s", err)
+	}
+	if err := randomize.Struct(seed, &foreign, userDBTypes, false, userColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize User struct: %s", err)
+	}
+
+	if err := foreign.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	local.UserID = foreign.ID
+	if err := local.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	check, err := local.User().One(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if check.ID != foreign.ID {
+		t.Errorf("want: %v, got %v", foreign.ID, check.ID)
+	}
+
+	slice := ColaResultSlice{&local}
+	if err = local.L.LoadUser(ctx, tx, false, (*[]*ColaResult)(&slice), nil); err != nil {
+		t.Fatal(err)
+	}
+	if local.R.User == nil {
+		t.Error("struct should have been eager loaded")
+	}
+
+	local.R.User = nil
+	if err = local.L.LoadUser(ctx, tx, true, &local, nil); err != nil {
+		t.Fatal(err)
+	}
+	if local.R.User == nil {
+		t.Error("struct should have been eager loaded")
+	}
+}
+
+func testColaResultToOneSetOpColaTypeUsingCola(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a ColaResult
+	var b, c ColaType
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, colaResultDBTypes, false, strmangle.SetComplement(colaResultPrimaryKeyColumns, colaResultColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &b, colaTypeDBTypes, false, strmangle.SetComplement(colaTypePrimaryKeyColumns, colaTypeColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &c, colaTypeDBTypes, false, strmangle.SetComplement(colaTypePrimaryKeyColumns, colaTypeColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	for i, x := range []*ColaType{&b, &c} {
+		err = a.SetCola(ctx, tx, i != 0, x)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if a.R.Cola != x {
+			t.Error("relationship struct not set to correct value")
+		}
+
+		if x.R.ColaColaResults[0] != &a {
+			t.Error("failed to append to foreign relationship struct")
+		}
+		if a.ColaID != x.ID {
+			t.Error("foreign key was wrong value", a.ColaID)
+		}
+
+		zero := reflect.Zero(reflect.TypeOf(a.ColaID))
+		reflect.Indirect(reflect.ValueOf(&a.ColaID)).Set(zero)
+
+		if err = a.Reload(ctx, tx); err != nil {
+			t.Fatal("failed to reload", err)
+		}
+
+		if a.ColaID != x.ID {
+			t.Error("foreign key was wrong value", a.ColaID, x.ID)
+		}
+	}
+}
+func testColaResultToOneSetOpUserUsingUser(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a ColaResult
+	var b, c User
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, colaResultDBTypes, false, strmangle.SetComplement(colaResultPrimaryKeyColumns, colaResultColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &b, userDBTypes, false, strmangle.SetComplement(userPrimaryKeyColumns, userColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &c, userDBTypes, false, strmangle.SetComplement(userPrimaryKeyColumns, userColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	for i, x := range []*User{&b, &c} {
+		err = a.SetUser(ctx, tx, i != 0, x)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if a.R.User != x {
+			t.Error("relationship struct not set to correct value")
+		}
+
+		if x.R.ColaResults[0] != &a {
+			t.Error("failed to append to foreign relationship struct")
+		}
+		if a.UserID != x.ID {
+			t.Error("foreign key was wrong value", a.UserID)
+		}
+
+		zero := reflect.Zero(reflect.TypeOf(a.UserID))
+		reflect.Indirect(reflect.ValueOf(&a.UserID)).Set(zero)
+
+		if err = a.Reload(ctx, tx); err != nil {
+			t.Fatal("failed to reload", err)
+		}
+
+		if a.UserID != x.ID {
+			t.Error("foreign key was wrong value", a.UserID, x.ID)
+		}
+	}
+}
+
 func testColaResultsReload(t *testing.T) {
 	t.Parallel()
 

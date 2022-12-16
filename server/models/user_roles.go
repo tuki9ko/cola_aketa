@@ -58,15 +58,26 @@ var UserRoleWhere = struct {
 
 // UserRoleRels is where relationship names are stored.
 var UserRoleRels = struct {
-}{}
+	RoleUsers string
+}{
+	RoleUsers: "RoleUsers",
+}
 
 // userRoleR is where relationships are stored.
 type userRoleR struct {
+	RoleUsers UserSlice `boil:"RoleUsers" json:"RoleUsers" toml:"RoleUsers" yaml:"RoleUsers"`
 }
 
 // NewStruct creates a new relationship struct
 func (*userRoleR) NewStruct() *userRoleR {
 	return &userRoleR{}
+}
+
+func (r *userRoleR) GetRoleUsers() UserSlice {
+	if r == nil {
+		return nil
+	}
+	return r.RoleUsers
 }
 
 // userRoleL is where Load methods for each relationship are stored.
@@ -356,6 +367,187 @@ func (q userRoleQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (b
 	}
 
 	return count > 0, nil
+}
+
+// RoleUsers retrieves all the user's Users with an executor via role_id column.
+func (o *UserRole) RoleUsers(mods ...qm.QueryMod) userQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"users\".\"role_id\"=?", o.ID),
+	)
+
+	return Users(queryMods...)
+}
+
+// LoadRoleUsers allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (userRoleL) LoadRoleUsers(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUserRole interface{}, mods queries.Applicator) error {
+	var slice []*UserRole
+	var object *UserRole
+
+	if singular {
+		var ok bool
+		object, ok = maybeUserRole.(*UserRole)
+		if !ok {
+			object = new(UserRole)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeUserRole)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeUserRole))
+			}
+		}
+	} else {
+		s, ok := maybeUserRole.(*[]*UserRole)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeUserRole)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeUserRole))
+			}
+		}
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &userRoleR{}
+		}
+		args = append(args, object.ID)
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userRoleR{}
+			}
+
+			for _, a := range args {
+				if a == obj.ID {
+					continue Outer
+				}
+			}
+
+			args = append(args, obj.ID)
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`users`),
+		qm.WhereIn(`users.role_id in ?`, args...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load users")
+	}
+
+	var resultSlice []*User
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice users")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on users")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for users")
+	}
+
+	if len(userAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.RoleUsers = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &userR{}
+			}
+			foreign.R.Role = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if local.ID == foreign.RoleID {
+				local.R.RoleUsers = append(local.R.RoleUsers, foreign)
+				if foreign.R == nil {
+					foreign.R = &userR{}
+				}
+				foreign.R.Role = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// AddRoleUsers adds the given related objects to the existing relationships
+// of the user_role, optionally inserting them as new records.
+// Appends related to o.R.RoleUsers.
+// Sets related.R.Role appropriately.
+func (o *UserRole) AddRoleUsers(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*User) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			rel.RoleID = o.ID
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"users\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"role_id"}),
+				strmangle.WhereClause("\"", "\"", 2, userPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			rel.RoleID = o.ID
+		}
+	}
+
+	if o.R == nil {
+		o.R = &userRoleR{
+			RoleUsers: related,
+		}
+	} else {
+		o.R.RoleUsers = append(o.R.RoleUsers, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &userR{
+				Role: o,
+			}
+		} else {
+			rel.R.Role = o
+		}
+	}
+	return nil
 }
 
 // UserRoles retrieves all the records using an executor.

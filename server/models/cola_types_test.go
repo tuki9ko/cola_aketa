@@ -494,6 +494,376 @@ func testColaTypesInsertWhitelist(t *testing.T) {
 	}
 }
 
+func testColaTypeToManyColaColaResults(t *testing.T) {
+	var err error
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a ColaType
+	var b, c ColaResult
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, colaTypeDBTypes, true, colaTypeColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize ColaType struct: %s", err)
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = randomize.Struct(seed, &b, colaResultDBTypes, false, colaResultColumnsWithDefault...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &c, colaResultDBTypes, false, colaResultColumnsWithDefault...); err != nil {
+		t.Fatal(err)
+	}
+
+	b.ColaID = a.ID
+	c.ColaID = a.ID
+
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	check, err := a.ColaColaResults().All(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bFound, cFound := false, false
+	for _, v := range check {
+		if v.ColaID == b.ColaID {
+			bFound = true
+		}
+		if v.ColaID == c.ColaID {
+			cFound = true
+		}
+	}
+
+	if !bFound {
+		t.Error("expected to find b")
+	}
+	if !cFound {
+		t.Error("expected to find c")
+	}
+
+	slice := ColaTypeSlice{&a}
+	if err = a.L.LoadColaColaResults(ctx, tx, false, (*[]*ColaType)(&slice), nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(a.R.ColaColaResults); got != 2 {
+		t.Error("number of eager loaded records wrong, got:", got)
+	}
+
+	a.R.ColaColaResults = nil
+	if err = a.L.LoadColaColaResults(ctx, tx, true, &a, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(a.R.ColaColaResults); got != 2 {
+		t.Error("number of eager loaded records wrong, got:", got)
+	}
+
+	if t.Failed() {
+		t.Logf("%#v", check)
+	}
+}
+
+func testColaTypeToManyAddOpColaColaResults(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a ColaType
+	var b, c, d, e ColaResult
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, colaTypeDBTypes, false, strmangle.SetComplement(colaTypePrimaryKeyColumns, colaTypeColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	foreigners := []*ColaResult{&b, &c, &d, &e}
+	for _, x := range foreigners {
+		if err = randomize.Struct(seed, x, colaResultDBTypes, false, strmangle.SetComplement(colaResultPrimaryKeyColumns, colaResultColumnsWithoutDefault)...); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	foreignersSplitByInsertion := [][]*ColaResult{
+		{&b, &c},
+		{&d, &e},
+	}
+
+	for i, x := range foreignersSplitByInsertion {
+		err = a.AddColaColaResults(ctx, tx, i != 0, x...)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		first := x[0]
+		second := x[1]
+
+		if a.ID != first.ColaID {
+			t.Error("foreign key was wrong value", a.ID, first.ColaID)
+		}
+		if a.ID != second.ColaID {
+			t.Error("foreign key was wrong value", a.ID, second.ColaID)
+		}
+
+		if first.R.Cola != &a {
+			t.Error("relationship was not added properly to the foreign slice")
+		}
+		if second.R.Cola != &a {
+			t.Error("relationship was not added properly to the foreign slice")
+		}
+
+		if a.R.ColaColaResults[i*2] != first {
+			t.Error("relationship struct slice not set to correct value")
+		}
+		if a.R.ColaColaResults[i*2+1] != second {
+			t.Error("relationship struct slice not set to correct value")
+		}
+
+		count, err := a.ColaColaResults().Count(ctx, tx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := int64((i + 1) * 2); count != want {
+			t.Error("want", want, "got", count)
+		}
+	}
+}
+func testColaTypeToOneManufacturerUsingManufacturer(t *testing.T) {
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var local ColaType
+	var foreign Manufacturer
+
+	seed := randomize.NewSeed()
+	if err := randomize.Struct(seed, &local, colaTypeDBTypes, false, colaTypeColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize ColaType struct: %s", err)
+	}
+	if err := randomize.Struct(seed, &foreign, manufacturerDBTypes, false, manufacturerColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Manufacturer struct: %s", err)
+	}
+
+	if err := foreign.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	local.ManufacturerID = foreign.ID
+	if err := local.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	check, err := local.Manufacturer().One(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if check.ID != foreign.ID {
+		t.Errorf("want: %v, got %v", foreign.ID, check.ID)
+	}
+
+	slice := ColaTypeSlice{&local}
+	if err = local.L.LoadManufacturer(ctx, tx, false, (*[]*ColaType)(&slice), nil); err != nil {
+		t.Fatal(err)
+	}
+	if local.R.Manufacturer == nil {
+		t.Error("struct should have been eager loaded")
+	}
+
+	local.R.Manufacturer = nil
+	if err = local.L.LoadManufacturer(ctx, tx, true, &local, nil); err != nil {
+		t.Fatal(err)
+	}
+	if local.R.Manufacturer == nil {
+		t.Error("struct should have been eager loaded")
+	}
+}
+
+func testColaTypeToOnePackageUsingPackage(t *testing.T) {
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var local ColaType
+	var foreign Package
+
+	seed := randomize.NewSeed()
+	if err := randomize.Struct(seed, &local, colaTypeDBTypes, false, colaTypeColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize ColaType struct: %s", err)
+	}
+	if err := randomize.Struct(seed, &foreign, packageDBTypes, false, packageColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Package struct: %s", err)
+	}
+
+	if err := foreign.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	local.PackageID = foreign.ID
+	if err := local.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	check, err := local.Package().One(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if check.ID != foreign.ID {
+		t.Errorf("want: %v, got %v", foreign.ID, check.ID)
+	}
+
+	slice := ColaTypeSlice{&local}
+	if err = local.L.LoadPackage(ctx, tx, false, (*[]*ColaType)(&slice), nil); err != nil {
+		t.Fatal(err)
+	}
+	if local.R.Package == nil {
+		t.Error("struct should have been eager loaded")
+	}
+
+	local.R.Package = nil
+	if err = local.L.LoadPackage(ctx, tx, true, &local, nil); err != nil {
+		t.Fatal(err)
+	}
+	if local.R.Package == nil {
+		t.Error("struct should have been eager loaded")
+	}
+}
+
+func testColaTypeToOneSetOpManufacturerUsingManufacturer(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a ColaType
+	var b, c Manufacturer
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, colaTypeDBTypes, false, strmangle.SetComplement(colaTypePrimaryKeyColumns, colaTypeColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &b, manufacturerDBTypes, false, strmangle.SetComplement(manufacturerPrimaryKeyColumns, manufacturerColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &c, manufacturerDBTypes, false, strmangle.SetComplement(manufacturerPrimaryKeyColumns, manufacturerColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	for i, x := range []*Manufacturer{&b, &c} {
+		err = a.SetManufacturer(ctx, tx, i != 0, x)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if a.R.Manufacturer != x {
+			t.Error("relationship struct not set to correct value")
+		}
+
+		if x.R.ColaTypes[0] != &a {
+			t.Error("failed to append to foreign relationship struct")
+		}
+		if a.ManufacturerID != x.ID {
+			t.Error("foreign key was wrong value", a.ManufacturerID)
+		}
+
+		zero := reflect.Zero(reflect.TypeOf(a.ManufacturerID))
+		reflect.Indirect(reflect.ValueOf(&a.ManufacturerID)).Set(zero)
+
+		if err = a.Reload(ctx, tx); err != nil {
+			t.Fatal("failed to reload", err)
+		}
+
+		if a.ManufacturerID != x.ID {
+			t.Error("foreign key was wrong value", a.ManufacturerID, x.ID)
+		}
+	}
+}
+func testColaTypeToOneSetOpPackageUsingPackage(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a ColaType
+	var b, c Package
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, colaTypeDBTypes, false, strmangle.SetComplement(colaTypePrimaryKeyColumns, colaTypeColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &b, packageDBTypes, false, strmangle.SetComplement(packagePrimaryKeyColumns, packageColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &c, packageDBTypes, false, strmangle.SetComplement(packagePrimaryKeyColumns, packageColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	for i, x := range []*Package{&b, &c} {
+		err = a.SetPackage(ctx, tx, i != 0, x)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if a.R.Package != x {
+			t.Error("relationship struct not set to correct value")
+		}
+
+		if x.R.ColaTypes[0] != &a {
+			t.Error("failed to append to foreign relationship struct")
+		}
+		if a.PackageID != x.ID {
+			t.Error("foreign key was wrong value", a.PackageID)
+		}
+
+		zero := reflect.Zero(reflect.TypeOf(a.PackageID))
+		reflect.Indirect(reflect.ValueOf(&a.PackageID)).Set(zero)
+
+		if err = a.Reload(ctx, tx); err != nil {
+			t.Fatal("failed to reload", err)
+		}
+
+		if a.PackageID != x.ID {
+			t.Error("foreign key was wrong value", a.PackageID, x.ID)
+		}
+	}
+}
+
 func testColaTypesReload(t *testing.T) {
 	t.Parallel()
 

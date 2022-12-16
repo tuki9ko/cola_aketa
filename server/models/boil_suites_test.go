@@ -127,7 +127,13 @@ func TestInsert(t *testing.T) {
 
 // TestToOne tests cannot be run in parallel
 // or deadlocks can occur.
-func TestToOne(t *testing.T) {}
+func TestToOne(t *testing.T) {
+	t.Run("ColaResultToColaTypeUsingCola", testColaResultToOneColaTypeUsingCola)
+	t.Run("ColaResultToUserUsingUser", testColaResultToOneUserUsingUser)
+	t.Run("ColaTypeToManufacturerUsingManufacturer", testColaTypeToOneManufacturerUsingManufacturer)
+	t.Run("ColaTypeToPackageUsingPackage", testColaTypeToOnePackageUsingPackage)
+	t.Run("UserToUserRoleUsingRole", testUserToOneUserRoleUsingRole)
+}
 
 // TestOneToOne tests cannot be run in parallel
 // or deadlocks can occur.
@@ -135,11 +141,23 @@ func TestOneToOne(t *testing.T) {}
 
 // TestToMany tests cannot be run in parallel
 // or deadlocks can occur.
-func TestToMany(t *testing.T) {}
+func TestToMany(t *testing.T) {
+	t.Run("ColaTypeToColaColaResults", testColaTypeToManyColaColaResults)
+	t.Run("ManufacturerToColaTypes", testManufacturerToManyColaTypes)
+	t.Run("PackageToColaTypes", testPackageToManyColaTypes)
+	t.Run("UserRoleToRoleUsers", testUserRoleToManyRoleUsers)
+	t.Run("UserToColaResults", testUserToManyColaResults)
+}
 
 // TestToOneSet tests cannot be run in parallel
 // or deadlocks can occur.
-func TestToOneSet(t *testing.T) {}
+func TestToOneSet(t *testing.T) {
+	t.Run("ColaResultToColaTypeUsingColaColaResults", testColaResultToOneSetOpColaTypeUsingCola)
+	t.Run("ColaResultToUserUsingColaResults", testColaResultToOneSetOpUserUsingUser)
+	t.Run("ColaTypeToManufacturerUsingColaTypes", testColaTypeToOneSetOpManufacturerUsingManufacturer)
+	t.Run("ColaTypeToPackageUsingColaTypes", testColaTypeToOneSetOpPackageUsingPackage)
+	t.Run("UserToUserRoleUsingRoleUsers", testUserToOneSetOpUserRoleUsingRole)
+}
 
 // TestToOneRemove tests cannot be run in parallel
 // or deadlocks can occur.
@@ -155,7 +173,13 @@ func TestOneToOneRemove(t *testing.T) {}
 
 // TestToManyAdd tests cannot be run in parallel
 // or deadlocks can occur.
-func TestToManyAdd(t *testing.T) {}
+func TestToManyAdd(t *testing.T) {
+	t.Run("ColaTypeToColaColaResults", testColaTypeToManyAddOpColaColaResults)
+	t.Run("ManufacturerToColaTypes", testManufacturerToManyAddOpColaTypes)
+	t.Run("PackageToColaTypes", testPackageToManyAddOpColaTypes)
+	t.Run("UserRoleToRoleUsers", testUserRoleToManyAddOpRoleUsers)
+	t.Run("UserToColaResults", testUserToManyAddOpColaResults)
+}
 
 // TestToManySet tests cannot be run in parallel
 // or deadlocks can occur.

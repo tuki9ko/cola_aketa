@@ -494,6 +494,160 @@ func testManufacturersInsertWhitelist(t *testing.T) {
 	}
 }
 
+func testManufacturerToManyColaTypes(t *testing.T) {
+	var err error
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a Manufacturer
+	var b, c ColaType
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, manufacturerDBTypes, true, manufacturerColumnsWithDefault...); err != nil {
+		t.Errorf("Unable to randomize Manufacturer struct: %s", err)
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = randomize.Struct(seed, &b, colaTypeDBTypes, false, colaTypeColumnsWithDefault...); err != nil {
+		t.Fatal(err)
+	}
+	if err = randomize.Struct(seed, &c, colaTypeDBTypes, false, colaTypeColumnsWithDefault...); err != nil {
+		t.Fatal(err)
+	}
+
+	b.ManufacturerID = a.ID
+	c.ManufacturerID = a.ID
+
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	check, err := a.ColaTypes().All(ctx, tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bFound, cFound := false, false
+	for _, v := range check {
+		if v.ManufacturerID == b.ManufacturerID {
+			bFound = true
+		}
+		if v.ManufacturerID == c.ManufacturerID {
+			cFound = true
+		}
+	}
+
+	if !bFound {
+		t.Error("expected to find b")
+	}
+	if !cFound {
+		t.Error("expected to find c")
+	}
+
+	slice := ManufacturerSlice{&a}
+	if err = a.L.LoadColaTypes(ctx, tx, false, (*[]*Manufacturer)(&slice), nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(a.R.ColaTypes); got != 2 {
+		t.Error("number of eager loaded records wrong, got:", got)
+	}
+
+	a.R.ColaTypes = nil
+	if err = a.L.LoadColaTypes(ctx, tx, true, &a, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(a.R.ColaTypes); got != 2 {
+		t.Error("number of eager loaded records wrong, got:", got)
+	}
+
+	if t.Failed() {
+		t.Logf("%#v", check)
+	}
+}
+
+func testManufacturerToManyAddOpColaTypes(t *testing.T) {
+	var err error
+
+	ctx := context.Background()
+	tx := MustTx(boil.BeginTx(ctx, nil))
+	defer func() { _ = tx.Rollback() }()
+
+	var a Manufacturer
+	var b, c, d, e ColaType
+
+	seed := randomize.NewSeed()
+	if err = randomize.Struct(seed, &a, manufacturerDBTypes, false, strmangle.SetComplement(manufacturerPrimaryKeyColumns, manufacturerColumnsWithoutDefault)...); err != nil {
+		t.Fatal(err)
+	}
+	foreigners := []*ColaType{&b, &c, &d, &e}
+	for _, x := range foreigners {
+		if err = randomize.Struct(seed, x, colaTypeDBTypes, false, strmangle.SetComplement(colaTypePrimaryKeyColumns, colaTypeColumnsWithoutDefault)...); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if err := a.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = b.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Insert(ctx, tx, boil.Infer()); err != nil {
+		t.Fatal(err)
+	}
+
+	foreignersSplitByInsertion := [][]*ColaType{
+		{&b, &c},
+		{&d, &e},
+	}
+
+	for i, x := range foreignersSplitByInsertion {
+		err = a.AddColaTypes(ctx, tx, i != 0, x...)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		first := x[0]
+		second := x[1]
+
+		if a.ID != first.ManufacturerID {
+			t.Error("foreign key was wrong value", a.ID, first.ManufacturerID)
+		}
+		if a.ID != second.ManufacturerID {
+			t.Error("foreign key was wrong value", a.ID, second.ManufacturerID)
+		}
+
+		if first.R.Manufacturer != &a {
+			t.Error("relationship was not added properly to the foreign slice")
+		}
+		if second.R.Manufacturer != &a {
+			t.Error("relationship was not added properly to the foreign slice")
+		}
+
+		if a.R.ColaTypes[i*2] != first {
+			t.Error("relationship struct slice not set to correct value")
+		}
+		if a.R.ColaTypes[i*2+1] != second {
+			t.Error("relationship struct slice not set to correct value")
+		}
+
+		count, err := a.ColaTypes().Count(ctx, tx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := int64((i + 1) * 2); count != want {
+			t.Error("want", want, "got", count)
+		}
+	}
+}
+
 func testManufacturersReload(t *testing.T) {
 	t.Parallel()
 
