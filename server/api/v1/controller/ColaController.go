@@ -31,3 +31,22 @@ func (cc ColaController) PostCola(c *gin.Context) {
 		"message": "cola post done!",
 	})
 }
+
+func (cc ColaController) GetColas(c *gin.Context) {
+	contextUserId, _ := c.Get("userId")
+	userId := contextUserId.(int)
+
+	colas, err := cs.GetColas(userId)
+
+	msg := "success"
+
+	if err != nil {
+		msg = err.Error()
+	}
+
+	c.JSON(200, gin.H{
+		"message": msg,
+		"colas":   colas,
+	})
+
+}

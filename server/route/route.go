@@ -35,6 +35,7 @@ func GetRouter() *gin.Engine {
 			{
 				root.GET("/cola", cc.GetCola)
 				root.POST("/cola", cc.PostCola)
+				root.GET("/colas", cc.GetColas)
 			}
 		}
 	}
