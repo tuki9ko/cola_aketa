@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/tuki9ko/cola_aketa/api/v1/dto"
 	"github.com/tuki9ko/cola_aketa/database"
 	"github.com/tuki9ko/cola_aketa/models"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -25,15 +26,18 @@ func (s ColaService) AddResult(userId int, cola_id int, result_date int64, note 
 	newRecord.Insert(context.Background(), database.Db, boil.Infer())
 }
 
-func (s ColaService) GetColas(userId int) (models.ColaResultSlice, error) {
-	colas, err := models.ColaResults(
+func (s ColaService) GetColas(userId int) ([]dto.ColasDTO, error) {
+	var dto []dto.ColasDTO
+
+	models.ColaResults(
+		qm.Select("cola_results.id as id, users.name as user_name, manufacturers.name as manufacturer_name, cola_types.name as cola_name, cola_types.amount as amount, packages.name as package_name, cola_types.calories as calories"),
+		qm.InnerJoin("users on users.id = cola_results.user_id"),
+		qm.InnerJoin("cola_types on cola_types.id = cola_results.cola_id"),
+		qm.InnerJoin("manufacturers on manufacturers.id = cola_types.manufacturer_id"),
+		qm.InnerJoin("packages on packages.id = cola_types.package_id"),
 		qm.Where("user_id = ?", userId),
 		qm.OrderBy("id ASC"),
-	).All(context.Background(), database.Db)
+	).BindP(context.Background(), database.Db, &dto)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return colas, nil
+	return dto, nil
 }
