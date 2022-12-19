@@ -12,6 +12,7 @@ var (
 	cc v1controller.ColaController
 	lc v1controller.LoginController
 	sc v1controller.SignupController
+	uc v1controller.UserController
 )
 
 func GetRouter() *gin.Engine {
@@ -36,6 +37,7 @@ func GetRouter() *gin.Engine {
 				root.GET("/cola", cc.GetCola)
 				root.POST("/cola", cc.PostCola)
 				root.GET("/colas", cc.GetColas)
+				root.GET("/user", uc.GetUser)
 			}
 		}
 	}
