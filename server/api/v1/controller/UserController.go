@@ -31,3 +31,7 @@ func (uc UserController) GetUser(c *gin.Context) {
 	})
 
 }
+
+func (uc UserController) PutUser(c *gin.Context) {
+
+}
