@@ -33,5 +33,19 @@ func (uc UserController) GetUser(c *gin.Context) {
 }
 
 func (uc UserController) PutUser(c *gin.Context) {
+	contextUserId, _ := c.Get("userId")
+	userId := contextUserId.(int)
 
+	name := c.PostForm("name")
+	email := c.PostForm("email")
+	password := c.PostForm("password")
+	role_id := 2
+	biography := c.PostForm("biography")
+	user_icon := c.PostForm("user_icon")
+
+	us.UpdateUser(userId, name, email, password, role_id, biography, user_icon)
+
+	c.JSON(200, gin.H{
+		"message": "update success.",
+	})
 }

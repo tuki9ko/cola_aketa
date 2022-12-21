@@ -38,6 +38,7 @@ func GetRouter() *gin.Engine {
 				root.POST("/cola", cc.PostCola)
 				root.GET("/colas", cc.GetColas)
 				root.GET("/user", uc.GetUser)
+				root.PUT("/user", uc.PutUser)
 			}
 		}
 	}
