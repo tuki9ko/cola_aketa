@@ -12,8 +12,22 @@ type ColaController struct{}
 var cs service.ColaService
 
 func (cc ColaController) GetCola(c *gin.Context) {
+	contextUserId, _ := c.Get("userId")
+	userId := contextUserId.(int)
+
+	cola_id, _ := strconv.Atoi(c.Query("cola_id"))
+
+	cola, err := cs.GetCola(userId, cola_id)
+
+	msg := "success"
+
+	if err != nil {
+		msg = err.Error()
+	}
+
 	c.JSON(200, gin.H{
-		"message": "cola results!",
+		"message": msg,
+		"cola":    cola,
 	})
 }
 
