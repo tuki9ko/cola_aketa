@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/tuki9ko/cola_aketa/api/v1/service"
 )
@@ -47,5 +49,22 @@ func (uc UserController) PutUser(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"message": "update success.",
+	})
+}
+
+func (uc UserController) GetColas(c *gin.Context) {
+	userId, _ := strconv.Atoi(c.Param("id"))
+
+	colas, err := cs.GetColas(userId)
+
+	msg := "success"
+
+	if err != nil {
+		msg = err.Error()
+	}
+
+	c.JSON(200, gin.H{
+		"message": msg,
+		"colas":   colas,
 	})
 }
