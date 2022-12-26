@@ -3,13 +3,16 @@ services:
     web:
         container_name: ${API_CONTAINER_NAME}
         build:
-            context: ./docker
+            context: .
+            dockerfile: ./docker/Dockerfile
             args:
-                - GO_VERSION=${GO_VERSION}
+                GO_VERSION: ${GO_VERSION}
+                API_CODE_LOCAL_PATH: ${PWD}/${API_CODE_LOCAL_PATH}
+                API_CODE_WORKDIR: ${API_CODE_WORKDIR}
         environment:
             - POSTGRESQL_URL=${POSTGRESQL_URL}
         volumes:
-            - ${API_CODE_LOCAL_PATH}:${API_CODE_WORKDIR}
+            - ./${API_CODE_LOCAL_PATH}:${API_CODE_WORKDIR}
         ports:
             - ${API_LOCAL_PORT}:${API_PORT}
         tty: true
