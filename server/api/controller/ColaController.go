@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tuki9ko/cola_aketa/api/request"
 	"github.com/tuki9ko/cola_aketa/api/service"
 )
 
@@ -35,11 +37,16 @@ func (cc ColaController) PostCola(c *gin.Context) {
 	contextUserId, _ := c.Get("userId")
 	userId := contextUserId.(int)
 
-	cola_id, _ := strconv.Atoi(c.PostForm("cola_id"))
-	result_date, _ := strconv.ParseInt(c.PostForm("result_date"), 10, 64)
-	note := c.PostForm("note")
+	var param request.PostColaParameter
 
-	cs.AddResult(userId, cola_id, result_date, note)
+	if err := c.Bind(&param); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(), //TODO: エラーメッセージを直す
+		})
+		return
+	}
+
+	cs.AddResult(userId, param.ColaId, param.Date, param.Note)
 
 	c.JSON(200, gin.H{
 		"message": "cola post done!",

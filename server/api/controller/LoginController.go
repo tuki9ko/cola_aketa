@@ -2,8 +2,10 @@ package controller
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tuki9ko/cola_aketa/api/request"
 	"github.com/tuki9ko/cola_aketa/api/service"
 )
 
@@ -18,19 +20,23 @@ func (lc LoginController) GetLogin(c *gin.Context) {
 }
 
 func (lc LoginController) PostLogin(c *gin.Context) {
-	userId := c.PostForm("userId")
-	password := c.PostForm("password")
+	var param request.PostLoginRequestParameter
 
-	user, err := ls.Login(c, userId, password)
+	if err := c.Bind(&param); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "Incorrect user or password",
+		})
+		return
+	}
+
+	user, _ := ls.Login(c, param.UserId, param.Password)
 
 	msg := ""
 
 	if user != nil {
 		msg = fmt.Sprintf("Login successful, hello %s.", user.Name)
-	}
-
-	if err != nil {
-		msg = err.Error()
+	} else {
+		msg = "Incorrect user or password"
 	}
 
 	c.JSON(200, gin.H{

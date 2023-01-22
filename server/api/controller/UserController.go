@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tuki9ko/cola_aketa/api/request"
 	"github.com/tuki9ko/cola_aketa/api/service"
 )
 
@@ -38,14 +40,15 @@ func (uc UserController) PutUser(c *gin.Context) {
 	contextUserId, _ := c.Get("userId")
 	userId := contextUserId.(int)
 
-	name := c.PostForm("name")
-	email := c.PostForm("email")
-	password := c.PostForm("password")
-	role_id := 2
-	biography := c.PostForm("biography")
-	user_icon := c.PostForm("user_icon")
+	var param request.PutUserParameter
 
-	us.UpdateUser(userId, name, email, password, role_id, biography, user_icon)
+	if err := c.Bind(&param); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(), // TODO: エラーメッセージを直す
+		})
+	}
+
+	us.UpdateUser(userId, param.Name, param.Email, param.Password, 2, param.Biography, param.UserIcon)
 
 	c.JSON(200, gin.H{
 		"message": "update success.",
