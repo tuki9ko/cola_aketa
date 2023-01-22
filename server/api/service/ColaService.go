@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tuki9ko/cola_aketa/api/v1/dto"
+	"github.com/tuki9ko/cola_aketa/api/dto"
 	"github.com/tuki9ko/cola_aketa/database"
 	"github.com/tuki9ko/cola_aketa/models"
 	"github.com/volatiletech/sqlboiler/v4/boil"

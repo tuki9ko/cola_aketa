@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/tuki9ko/cola_aketa/api/v1/service"
+	"github.com/tuki9ko/cola_aketa/api/service"
 )
 
 type SignupController struct{}
