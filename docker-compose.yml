@@ -1,13 +1,26 @@
 version: "3.9"
 services:
-    web:
+    next:
+        container_name: ${NEXT_CONTAINER_NAME}
+        build:
+            context: .
+            dockerfile: ./docker/node/Dockerfile
+            args:
+                NEXT_NODE_VERSION: ${NEXT_NODE_VERSION}
+                NEXT_LOCAL_PATH: ${PWD}/${NEXT_LOCAL_PATH}
+                NEXT_WORKDIR: ${NEXT_WORKDIR}
+        volumes:
+            - ./${NEXT_LOCAL_PATH}:${NEXT_WORKDIR}
+        ports:
+            - ${NEXT_LOCAL_PORT}:${NEXT_PORT}
+        tty: true
+    api:
         container_name: ${API_CONTAINER_NAME}
         build:
             context: .
-            dockerfile: ./docker/Dockerfile
+            dockerfile: ./docker/api/Dockerfile
             args:
                 GO_VERSION: ${GO_VERSION}
-                API_CODE_LOCAL_PATH: ${PWD}/${API_CODE_LOCAL_PATH}
                 API_CODE_WORKDIR: ${API_CODE_WORKDIR}
         environment:
             - POSTGRESQL_URL=${POSTGRESQL_URL}
