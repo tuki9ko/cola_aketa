@@ -3,6 +3,7 @@ package route
 import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	controller "github.com/tuki9ko/cola_aketa/api/controller"
 	"github.com/tuki9ko/cola_aketa/middleware"
@@ -20,6 +21,18 @@ func GetRouter() *gin.Engine {
 
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("cola_session", store))
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000", "http://localhost:13000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{
+			"Access-Control-Allow-Headers",
+			"Content-Type",
+			"Content-Length",
+			"Accept-Encoding",
+			"X-CSRF-Token",
+			"Authorization",
+		},
+	}))
 
 	api := r.Group("/api")
 	{
