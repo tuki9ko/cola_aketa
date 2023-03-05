@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { NextPage } from 'next'
-import Head from 'next/head'
 import { useState } from 'react'
 
 type SSGProps = {}
@@ -30,7 +29,7 @@ const Login: NextPage<SSGProps> = () => {
   }
 
   return (
-    <div>
+    <>
       <form action="" method="post">
         <table>
           <tr>
@@ -47,7 +46,7 @@ const Login: NextPage<SSGProps> = () => {
           </tr>
         </table>
       </form>
-    </div>
+    </>
   )
 }
 
