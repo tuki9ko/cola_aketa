@@ -23,7 +23,7 @@ func (lc LoginController) PostLogin(c *gin.Context) {
 	var param request.PostLoginRequestParameter
 
 	if err := c.Bind(&param); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusUnauthorized, gin.H{
 			"message": "Incorrect user or password",
 		})
 		return
@@ -37,6 +37,9 @@ func (lc LoginController) PostLogin(c *gin.Context) {
 		msg = fmt.Sprintf("Login successful, hello %s.", user.Name)
 	} else {
 		msg = "Incorrect user or password"
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": msg,
+		})
 	}
 
 	c.JSON(200, gin.H{

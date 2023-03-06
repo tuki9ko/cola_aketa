@@ -32,6 +32,8 @@ func GetRouter() *gin.Engine {
 			"X-CSRF-Token",
 			"Authorization",
 		},
+		AllowCredentials: true,
+		MaxAge: 300,
 	}))
 
 	api := r.Group("/api")
